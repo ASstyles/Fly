@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Fuel to Fly 4.0 - Judge Evaluation App</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Header (Shows on all screens except Welcome) -->
+    <header class="app-header" id="main-header" style="display: none;">
+        <div class="header-container">
+            <div class="header-logo">
+                <span class="logo-fuel">FUEL</span>
+                <span class="logo-to">TO</span>
+                <span class="logo-fly">FLY 4.0</span>
+            </div>
+            <div class="header-status">
+                <span class="badge round-badge" id="header-round-display">Round 1</span>
+                <span class="badge judge-badge" id="header-judge-display">Judge Name</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Screen 1: Welcome / Setup Dashboard -->
+        <section class="screen active" id="screen-welcome">
+            <div class="welcome-container">
+                <div class="brand-hero">
+                    <div class="brand-icon-wrapper">
+                        <i data-lucide="zap" class="icon-glow-orange"></i>
+                        <i data-lucide="plane-takeoff" class="icon-glow-cyan"></i>
+                    </div>
+                    <h1>FUEL TO FLY 4.0</h1>
+                    <p class="brand-subtitle">Entrepreneurship Conclave Evaluation Portal</p>
+                    <p class="brand-date"><i data-lucide="calendar"></i> June 19, 2026</p>
+                </div>
+
+                <div class="card glass-card setup-card">
+                    <h2>Welcome, Judge</h2>
+                    <p class="card-instruction">Please enter your name to begin evaluations. All data is stored locally on this device.</p>
+                    
+                    <div class="input-group">
+                        <label for="judge-name-input"><i data-lucide="user"></i> Judge Name</label>
+                        <input type="text" id="judge-name-input" placeholder="Enter your full name" required>
+                    </div>
+
+                    <button class="btn btn-primary btn-block" id="btn-welcome-start">
+                        <span>Get Started</span> <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="dashboard-quick-actions">
+                    <button class="btn btn-outline" id="btn-welcome-summary">
+                        <i data-lucide="bar-chart-3"></i> View Summary
+                    </button>
+                    <button class="btn btn-outline" id="btn-welcome-export">
+                        <i data-lucide="download"></i> Backup &amp; Export
+                    </button>
+                </div>
+
+                <div class="danger-zone-compact">
+                    <button class="btn btn-text-danger" id="btn-welcome-reset">
+                        <i data-lucide="trash-2"></i> Reset Database
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Select Round -->
+        <section class="screen" id="screen-round">
+            <div class="screen-header-bar">
+                <button class="btn-back" id="btn-round-back"><i data-lucide="arrow-left"></i> Back</button>
+                <h2>Choose Round</h2>
+            </div>
+            
+            <div class="screen-content">
+                <p class="screen-intro">Select the evaluation round. You can score the same team in both rounds separately.</p>
+                
+                <div class="round-cards">
+                    <button class="card glass-card round-select-btn" data-round="Round 1">
+                        <div class="round-icon-container bg-gradient-orange">
+                            <i data-lucide="list-filter"></i>
+                        </div>
+                        <div class="round-details">
+                            <h3>Round 1: Elimination</h3>
+                            <p>Breakout room pitches. Each team is scored out of 50 marks.</p>
+                        </div>
+                        <i data-lucide="arrow-right" class="arrow-indicator"></i>
+                    </button>
+
+                    <button class="card glass-card round-select-btn" data-round="Round 2">
+                        <div class="round-icon-container bg-gradient-cyan">
+                            <i data-lucide="award"></i>
+                        </div>
+                        <div class="round-details">
+                            <h3>Round 2: Final Round</h3>
+                            <p>Main stage finalists pitch. Each team is scored out of 50 marks.</p>
+                        </div>
+                        <i data-lucide="arrow-right" class="arrow-indicator"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Select or Add Team -->
+        <section class="screen" id="screen-team-select">
+            <div class="screen-header-bar">
+                <button class="btn-back" id="btn-team-select-back"><i data-lucide="arrow-left"></i> Back</button>
+                <h2>Select Team</h2>
+            </div>
+
+            <div class="screen-content">
+                <!-- Search & Filters -->
+                <div class="search-filter-container">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="team-search-input" placeholder="Search team name, number, service...">
+                    </div>
+                    
+                    <div class="theme-filter-scroll">
+                        <button class="theme-pill active" data-theme="All">All Themes</button>
+                        <button class="theme-pill" data-theme="Sustainability">Sustainability</button>
+                        <button class="theme-pill" data-theme="Safety">Safety</button>
+                        <button class="theme-pill" data-theme="Accessibility">Accessibility</button>
+                        <button class="theme-pill" data-theme="Mental & Emotional Well-being">Mental Health</button>
+                        <button class="theme-pill" data-theme="Other">Other</button>
+                    </div>
+                </div>
+
+                <!-- Teams List -->
+                <div class="team-list-section">
+                    <div class="list-header">
+                        <span class="list-count" id="team-count-display">0 Teams Available</span>
+                        <button class="btn btn-sm btn-outline-primary" id="btn-trigger-add-team">
+                            <i data-lucide="plus"></i> Add New Team
+                        </button>
+                    </div>
+
+                    <!-- Slide Down Add Team Form -->
+                    <div class="card glass-card add-team-form" id="add-team-panel" style="display: none;">
+                        <h3>Add New Team</h3>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="new-team-name">Team Name *</label>
+                                <input type="text" id="new-team-name" placeholder="e.g. Team Alpha">
+                            </div>
+                            <div class="input-group">
+                                <label for="new-team-number">Team Number *</label>
+                                <input type="text" id="new-team-number" placeholder="e.g. 101">
+                            </div>
+                            <div class="input-group">
+                                <label for="new-school-name">School Name (Optional)</label>
+                                <input type="text" id="new-school-name" placeholder="e.g. Horizon High">
+                            </div>
+                            <div class="input-group">
+                                <label for="new-team-theme">Theme *</label>
+                                <select id="new-team-theme">
+                                    <option value="Sustainability">Sustainability</option>
+                                    <option value="Safety">Safety</option>
+                                    <option value="Accessibility">Accessibility</option>
+                                    <option value="Mental & Emotional Well-being">Mental &amp; Emotional Well-being</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="input-group full-width">
+                                <label for="new-product-name">Product / Service Name *</label>
+                                <input type="text" id="new-product-name" placeholder="e.g. Eco Sorter">
+                            </div>
+                            <div class="input-group full-width">
+                                <label for="new-idea-desc">Short Description</label>
+                                <textarea id="new-idea-desc" rows="2" placeholder="Describe the idea..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label for="new-presentation-room">Presentation Room</label>
+                                <input type="text" id="new-presentation-room" placeholder="e.g. Lab 2">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-sm btn-text" id="btn-cancel-add-team">Cancel</button>
+                            <button class="btn btn-sm btn-primary" id="btn-save-new-team">Save Team</button>
+                        </div>
+                    </div>
+
+                    <div class="teams-container" id="teams-list-mount">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Score Team -->
+        <section class="screen" id="screen-score">
+            <!-- Floating Score Bar -->
+            <div class="floating-score-bar">
+                <div class="floating-team-info">
+                    <h3 id="score-team-title">Team Alpha</h3>
+                    <span id="score-team-meta">Round 1 • Theme: Sustainability</span>
+                </div>
+                <div class="floating-total-badge">
+                    <span class="total-score-label">Total</span>
+                    <span class="total-score-value" id="score-total-live">00</span>
+                    <span class="total-score-max">/50</span>
+                </div>
+            </div>
+
+            <div class="screen-header-bar margin-for-floating">
+                <button class="btn-back" id="btn-score-back"><i data-lucide="arrow-left"></i> Back</button>
+                <h2>Scoring Panel</h2>
+            </div>
+
+            <div class="screen-content has-bottom-bar">
+                <!-- Team Quick Details Card -->
+                <div class="card glass-card team-brief-card">
+                    <div class="brief-row">
+                        <span class="brief-label">Product:</span>
+                        <strong class="brief-val" id="score-brief-product">Eco Sorter</strong>
+                    </div>
+                    <div class="brief-row" id="score-brief-school-row">
+                        <span class="brief-label">School:</span>
+                        <strong class="brief-val" id="score-brief-school">Horizon High</strong>
+                    </div>
+                    <div class="brief-row desc-row">
+                        <span class="brief-label">Concept:</span>
+                        <p class="brief-desc" id="score-brief-desc">An AI-powered recycling bin that automatically segregates waste into categories.</p>
+                    </div>
+                </div>
+
+                <!-- CRITERIA SECTION -->
+                <div class="scoring-criteria-section">
+                    <!-- Criteria 1 -->
+                    <div class="card glass-card criteria-card">
+                        <div class="criteria-header">
+                            <div class="criteria-num">01</div>
+                            <div class="criteria-title-area">
+                                <h3>Originality &amp; Innovation</h3>
+                                <p>Is the idea fresh? Meaningfully different? Creative problem-solving beyond basic templates?</p>
+                            </div>
+                            <div class="criteria-score-box">
+                                <input type="number" min="0" max="15" class="score-num-input" id="score-input-originality-num">
+                                <span class="max-marker">/15</span>
+                            </div>
+                        </div>
+                        <div class="criteria-slider-area">
+                            <input type="range" min="0" max="15" step="1" class="score-slider" id="score-input-originality-range">
+                            <div class="slider-ticks">
+                                <span>0</span>
+                                <span>5</span>
+                                <span>10</span>
+                                <span>15</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 2 -->
+                    <div class="card glass-card criteria-card">
+                        <div class="criteria-header">
+                            <div class="criteria-num">02</div>
+                            <div class="criteria-title-area">
+                                <h3>Feasibility &amp; Practicality</h3>
+                                <p>Can this realistically be implemented? Believable prototype or demo? Clear operational steps?</p>
+                            </div>
+                            <div class="criteria-score-box">
+                                <input type="number" min="0" max="5" class="score-num-input" id="score-input-feasibility-num">
+                                <span class="max-marker">/5</span>
+                            </div>
+                        </div>
+                        <div class="criteria-slider-area">
+                            <input type="range" min="0" max="5" step="1" class="score-slider" id="score-input-feasibility-range">
+                            <div class="slider-ticks">
+                                <span>0</span>
+                                <span>2.5</span>
+                                <span>5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 3 -->
+                    <div class="card glass-card criteria-card">
+                        <div class="criteria-header">
+                            <div class="criteria-num">03</div>
+                            <div class="criteria-title-area">
+                                <h3>Market Potential / Adoption</h3>
+                                <p>Who will buy/use this? Scalability plan? Understanding competitors and alternatives?</p>
+                            </div>
+                            <div class="criteria-score-box">
+                                <input type="number" min="0" max="10" class="score-num-input" id="score-input-market-num">
+                                <span class="max-marker">/10</span>
+                            </div>
+                        </div>
+                        <div class="criteria-slider-area">
+                            <input type="range" min="0" max="10" step="1" class="score-slider" id="score-input-market-range">
+                            <div class="slider-ticks">
+                                <span>0</span>
+                                <span>5</span>
+                                <span>10</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 4 - SPECIAL INCLUSION CARD -->
+                    <div class="card glass-card criteria-card special-highlight-card">
+                        <div class="highlight-ribbon">Important Focus</div>
+                        <div class="criteria-header">
+                            <div class="criteria-num">04</div>
+                            <div class="criteria-title-area">
+                                <h3>Social / Environmental Impact &amp; Inclusion</h3>
+                                <p>Does it address sustainability, accessibility, safety, or emotional health? Inclusive for elderly, disabled, or vulnerable users?</p>
+                            </div>
+                            <div class="criteria-score-box">
+                                <input type="number" min="0" max="15" class="score-num-input" id="score-input-impact-num">
+                                <span class="max-marker">/15</span>
+                            </div>
+                        </div>
+                        <div class="criteria-slider-area">
+                            <input type="range" min="0" max="15" step="1" class="score-slider" id="score-input-impact-range">
+                            <div class="slider-ticks">
+                                <span>0</span>
+                                <span>5</span>
+                                <span>10</span>
+                                <span>15</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criteria 5 -->
+                    <div class="card glass-card criteria-card">
+                        <div class="criteria-header">
+                            <div class="criteria-num">05</div>
+                            <div class="criteria-title-area">
+                                <h3>Presentation Quality</h3>
+                                <p>Clear structure? Confident speakers? Quality of answers? Stayed within time boundaries?</p>
+                            </div>
+                            <div class="criteria-score-box">
+                                <input type="number" min="0" max="5" class="score-num-input" id="score-input-presentation-num">
+                                <span class="max-marker">/5</span>
+                            </div>
+                        </div>
+                        <div class="criteria-slider-area">
+                            <input type="range" min="0" max="5" step="1" class="score-slider" id="score-input-presentation-range">
+                            <div class="slider-ticks">
+                                <span>0</span>
+                                <span>2.5</span>
+                                <span>5</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOTES SECTION -->
+                <div class="scoring-section-title"><i data-lucide="edit-3"></i> Judge Notes &amp; Observations</div>
+                <div class="card glass-card notes-card">
+                    <div class="input-group">
+                        <label for="notes-strengths"><i data-lucide="thumbs-up" class="color-success"></i> Strengths (What went well?)</label>
+                        <textarea id="notes-strengths" rows="2" placeholder="List core strengths..."></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="notes-concerns"><i data-lucide="alert-triangle" class="color-warning"></i> Concerns (Needs improvement?)</label>
+                        <textarea id="notes-concerns" rows="2" placeholder="List weaknesses/concerns..."></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="notes-inclusion"><i data-lucide="accessibility" class="color-cyan"></i> Inclusion Question</label>
+                        <span class="input-sublabel">How can this idea be made more accessible or inclusive?</span>
+                        <textarea id="notes-inclusion" rows="2" placeholder="Any modifications to benefit elderly, disabled, or low-income groups?"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="notes-next-steps"><i data-lucide="trending-up"></i> Suggested Next Step</label>
+                        <textarea id="notes-next-steps" rows="2" placeholder="What should the team focus on next?"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="notes-overall"><i data-lucide="message-square"></i> Overall Comment</label>
+                        <textarea id="notes-overall" rows="2" placeholder="Summary comment..."></textarea>
+                    </div>
+                </div>
+
+                <!-- RECORDING SECTION -->
+                <div class="scoring-section-title"><i data-lucide="mic"></i> Optional Media Recording</div>
+                <div class="card glass-card recording-card">
+                    <div class="recording-status-area">
+                        <div class="recorder-visualizer">
+                            <span class="visualizer-bar bar-1"></span>
+                            <span class="visualizer-bar bar-2"></span>
+                            <span class="visualizer-bar bar-3"></span>
+                            <span class="visualizer-bar bar-4"></span>
+                            <span class="visualizer-bar bar-5"></span>
+                        </div>
+                        <div class="recording-meta">
+                            <div class="rec-label" id="recording-status-text">No recording attached</div>
+                            <div class="rec-timer" id="recording-timer">00:00</div>
+                        </div>
+                    </div>
+
+                    <div class="recording-controls">
+                        <button class="btn btn-danger-dark" id="btn-rec-audio-start">
+                            <i data-lucide="mic"></i> Record Audio
+                        </button>
+                        <button class="btn btn-outline" id="btn-rec-video-start">
+                            <i data-lucide="video"></i> Record Video (Exp)
+                        </button>
+                        <button class="btn btn-danger btn-pulse" id="btn-rec-stop" style="display: none;">
+                            <i data-lucide="square"></i> Stop
+                        </button>
+                    </div>
+
+                    <!-- Recording Preview & Actions -->
+                    <div id="recording-preview-box" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Recording Preview</div>
+                        <div id="preview-media-mount">
+                            <!-- audio/video tag will mount here -->
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn btn-sm btn-outline-success" id="btn-rec-download">
+                                <i data-lucide="download"></i> Download File
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" id="btn-rec-delete">
+                                <i data-lucide="trash-2"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="rec-warning-msg">
+                        <i data-lucide="alert-circle"></i>
+                        Recordings are saved temporarily in the browser. Please download critical recordings directly to your device before leaving the app.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Navigation Sheet -->
+            <footer class="scoring-sticky-footer">
+                <div class="sticky-actions-container">
+                    <button class="btn btn-outline" id="btn-score-draft"><i data-lucide="save"></i> Save Draft</button>
+                    <button class="btn btn-primary" id="btn-score-save"><i data-lucide="check-circle-2"></i> Save &amp; Submit</button>
+                    <button class="btn btn-accent" id="btn-score-save-next">Next Team <i data-lucide="chevron-right"></i></button>
+                </div>
+            </footer>
+        </section>
+
+        <!-- Screen 5: Confirmation Screen -->
+        <section class="screen" id="screen-confirmation">
+            <div class="confirmation-container">
+                <div class="success-icon-badge">
+                    <i data-lucide="check-circle-2"></i>
+                </div>
+                
+                <h1>Evaluation Saved!</h1>
+                <p class="conf-intro" id="conf-team-intro">Team Alpha has been successfully evaluated.</p>
+
+                <div class="card glass-card score-summary-card">
+                    <div class="conf-detail-row">
+                        <span>Round:</span>
+                        <strong id="conf-round-display">Round 1</strong>
+                    </div>
+                    <div class="conf-detail-row">
+                        <span>Team Name:</span>
+                        <strong id="conf-team-display">Team Alpha</strong>
+                    </div>
+                    <div class="conf-score-display">
+                        <div class="conf-score-ring">
+                            <span class="conf-score-num" id="conf-score-value">41</span>
+                            <span class="conf-score-max">/50</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="confirmation-actions">
+                    <button class="btn btn-primary btn-block" id="btn-conf-next">
+                        <i data-lucide="play"></i> Evaluate Next Team
+                    </button>
+                    <button class="btn btn-outline btn-block" id="btn-conf-summary">
+                        <i data-lucide="bar-chart-3"></i> View Summary &amp; Rankings
+                    </button>
+                    <button class="btn btn-outline btn-block" id="btn-conf-edit">
+                        <i data-lucide="edit"></i> Edit This Evaluation
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Summary Dashboard & Rankings -->
+        <section class="screen" id="screen-summary">
+            <div class="screen-header-bar">
+                <button class="btn-back" id="btn-summary-back"><i data-lucide="arrow-left"></i> Home</button>
+                <h2>Event Summary</h2>
+            </div>
+
+            <div class="screen-content">
+                <!-- Summary Navigation Filters -->
+                <div class="summary-filters-card card glass-card">
+                    <div class="filter-row">
+                        <span class="filter-label">Round:</span>
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-summary-round="Round 1">Round 1</button>
+                            <button class="tab-btn" data-summary-round="Round 2">Round 2</button>
+                            <button class="tab-btn" data-summary-round="All">All</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-row">
+                        <span class="filter-label">Filter Theme:</span>
+                        <select id="summary-theme-select" class="dropdown-filter">
+                            <option value="All">All Themes</option>
+                            <option value="Sustainability">Sustainability</option>
+                            <option value="Safety">Safety</option>
+                            <option value="Accessibility">Accessibility</option>
+                            <option value="Mental & Emotional Well-being">Mental Health</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-row">
+                        <span class="filter-label">Sort By:</span>
+                        <select id="summary-sort-select" class="dropdown-filter">
+                            <option value="totalScore">Total Score (Highest)</option>
+                            <option value="impactAccessibilityInclusion">Impact &amp; Inclusion (Highest)</option>
+                            <option value="marketPotential">Market Potential (Highest)</option>
+                            <option value="originalityInnovation">Innovation (Highest)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Award Suggestions Section -->
+                <div class="scoring-section-title"><i data-lucide="award"></i> Award Recommendations</div>
+                <div class="card glass-card awards-dashboard" id="awards-mount">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Rankings Section -->
+                <div class="scoring-section-title">
+                    <span><i data-lucide="trophy"></i> Team Rankings &amp; Scorecard</span>
+                    <button class="btn btn-sm btn-outline-primary" id="btn-summary-export-panel">
+                        <i data-lucide="share-2"></i> Export Data
+                    </button>
+                </div>
+
+                <div class="rankings-table-container">
+                    <div id="tie-warning-banner" class="alert-info-banner" style="display: none;">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Ties detected. Tie-breaker sorting applied. Review score breakups.</span>
+                    </div>
+
+                    <div class="rankings-list" id="rankings-list-mount">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 7: Team Detail View -->
+        <section class="screen" id="screen-detail">
+            <div class="screen-header-bar">
+                <button class="btn-back" id="btn-detail-back"><i data-lucide="arrow-left"></i> Back</button>
+                <h2>Evaluation Details</h2>
+            </div>
+
+            <div class="screen-content">
+                <div class="card glass-card detail-hero-card">
+                    <div class="detail-header-row">
+                        <div>
+                            <span class="badge" id="detail-round">Round 1</span>
+                            <span class="badge theme-badge" id="detail-theme">Sustainability</span>
+                        </div>
+                        <div class="detail-total-badge">
+                            <span class="detail-score-num" id="detail-total-score">41</span>
+                            <span class="detail-score-max">/50</span>
+                        </div>
+                    </div>
+                    <h1 id="detail-team-name">Team Alpha</h1>
+                    <h3 id="detail-product-name">Eco Sorter</h3>
+                    <p id="detail-description">Description goes here...</p>
+                    
+                    <div class="meta-details-grid">
+                        <div class="meta-item">
+                            <span>Team #</span>
+                            <strong id="detail-team-number">101</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>School</span>
+                            <strong id="detail-school-name">-</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Room</span>
+                            <strong id="detail-room">-</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Judge</span>
+                            <strong id="detail-judge">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Score Details Grid -->
+                <div class="scoring-section-title">Criteria-wise Score</div>
+                <div class="card glass-card criteria-breakdown-card">
+                    <div class="breakdown-row">
+                        <div class="breakdown-label">
+                            <strong>Originality &amp; Innovation</strong>
+                            <span>Max 15 Marks</span>
+                        </div>
+                        <div class="breakdown-bar-container">
+                            <div class="breakdown-bar" id="bar-originality" style="width: 0%;"></div>
+                        </div>
+                        <div class="breakdown-score"><strong id="detail-score-originality">0</strong>/15</div>
+                    </div>
+
+                    <div class="breakdown-row">
+                        <div class="breakdown-label">
+                            <strong>Feasibility &amp; Practicality</strong>
+                            <span>Max 5 Marks</span>
+                        </div>
+                        <div class="breakdown-bar-container">
+                            <div class="breakdown-bar" id="bar-feasibility" style="width: 0%;"></div>
+                        </div>
+                        <div class="breakdown-score"><strong id="detail-score-feasibility">0</strong>/5</div>
+                    </div>
+
+                    <div class="breakdown-row">
+                        <div class="breakdown-label">
+                            <strong>Market / Adoption Potential</strong>
+                            <span>Max 10 Marks</span>
+                        </div>
+                        <div class="breakdown-bar-container">
+                            <div class="breakdown-bar" id="bar-market" style="width: 0%;"></div>
+                        </div>
+                        <div class="breakdown-score"><strong id="detail-score-market">0</strong>/10</div>
+                    </div>
+
+                    <div class="breakdown-row highlight-row">
+                        <div class="breakdown-label">
+                            <strong>Social / Impact &amp; Inclusion</strong>
+                            <span>Max 15 Marks</span>
+                        </div>
+                        <div class="breakdown-bar-container">
+                            <div class="breakdown-bar bg-accent-glow" id="bar-impact" style="width: 0%;"></div>
+                        </div>
+                        <div class="breakdown-score"><strong id="detail-score-impact">0</strong>/15</div>
+                    </div>
+
+                    <div class="breakdown-row">
+                        <div class="breakdown-label">
+                            <strong>Presentation Quality</strong>
+                            <span>Max 5 Marks</span>
+                        </div>
+                        <div class="breakdown-bar-container">
+                            <div class="breakdown-bar" id="bar-presentation" style="width: 0%;"></div>
+                        </div>
+                        <div class="breakdown-score"><strong id="detail-score-presentation">0</strong>/5</div>
+                    </div>
+                </div>
+
+                <!-- Notes Details -->
+                <div class="scoring-section-title">Judge Notes</div>
+                <div class="card glass-card notes-details-card">
+                    <div class="note-view-block">
+                        <h4><i data-lucide="thumbs-up" class="color-success"></i> Strengths</h4>
+                        <p id="detail-notes-strengths">None recorded.</p>
+                    </div>
+
+                    <div class="note-view-block">
+                        <h4><i data-lucide="alert-triangle" class="color-warning"></i> Concerns</h4>
+                        <p id="detail-notes-concerns">None recorded.</p>
+                    </div>
+
+                    <div class="note-view-block detail-highlight-block">
+                        <h4><i data-lucide="accessibility" class="color-cyan"></i> Accessibility &amp; Inclusion Modifications</h4>
+                        <p id="detail-notes-inclusion">None recorded.</p>
+                    </div>
+
+                    <div class="note-view-block">
+                        <h4><i data-lucide="trending-up"></i> Suggested Next Steps</h4>
+                        <p id="detail-notes-next-steps">None recorded.</p>
+                    </div>
+
+                    <div class="note-view-block">
+                        <h4><i data-lucide="message-square"></i> General Comments</h4>
+                        <p id="detail-notes-overall">None recorded.</p>
+                    </div>
+                </div>
+
+                <!-- Media Details -->
+                <div class="scoring-section-title">Attached Pitch Recording</div>
+                <div class="card glass-card detail-media-card">
+                    <div id="detail-recording-unavailable" class="empty-media-state">
+                        <i data-lucide="mic-off"></i>
+                        <span>No media recording attached to this evaluation.</span>
+                    </div>
+
+                    <div id="detail-recording-available" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Media Player</div>
+                        <div id="detail-media-mount">
+                            <!-- audio/video tag will mount here -->
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn btn-sm btn-outline-success" id="btn-detail-media-download">
+                                <i data-lucide="download"></i> Download Recording
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="detail-actions">
+                    <button class="btn btn-outline" id="btn-detail-edit">
+                        <i data-lucide="edit"></i> Edit Evaluation
+                    </button>
+                    <button class="btn btn-outline-danger" id="btn-detail-delete">
+                        <i data-lucide="trash-2"></i> Delete Evaluation
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 8: Export / Backup / Recovery -->
+        <section class="screen" id="screen-export">
+            <div class="screen-header-bar">
+                <button class="btn-back" id="btn-export-back"><i data-lucide="arrow-left"></i> Home</button>
+                <h2>Backup &amp; Export</h2>
+            </div>
+
+            <div class="screen-content">
+                <p class="screen-intro">Since this is a static app, your evaluation results are saved in this browser. Use these options to safely export, backup, or print reports.</p>
+                
+                <div class="card glass-card export-options-card">
+                    <button class="export-tile-btn" id="btn-export-csv">
+                        <div class="export-tile-icon color-success">
+                            <i data-lucide="file-spreadsheet"></i>
+                        </div>
+                        <div class="export-tile-info">
+                            <h3>Download CSV Report</h3>
+                            <p>Export all team results, sub-scores, rankings, and judge notes into a spreadsheet-compatible CSV file.</p>
+                        </div>
+                    </button>
+
+                    <button class="export-tile-btn" id="btn-export-json">
+                        <div class="export-tile-icon color-cyan">
+                            <i data-lucide="database"></i>
+                        </div>
+                        <div class="export-tile-info">
+                            <h3>Download JSON Backup</h3>
+                            <p>Save a complete raw data file containing all teams, evaluations, and metadata. Safely import this backup on another device.</p>
+                        </div>
+                    </button>
+
+                    <button class="export-tile-btn" id="btn-export-clipboard">
+                        <div class="export-tile-icon color-warning">
+                            <i data-lucide="copy"></i>
+                        </div>
+                        <div class="export-tile-info">
+                            <h3>Copy Quick Summary</h3>
+                            <p>Copy a formatted markdown text summary of all team rankings and total scores to your device's clipboard.</p>
+                        </div>
+                    </button>
+
+                    <button class="export-tile-btn" id="btn-export-print">
+                        <div class="export-tile-icon color-accent">
+                            <i data-lucide="printer"></i>
+                        </div>
+                        <div class="export-tile-info">
+                            <h3>Print Summary Sheets</h3>
+                            <p>Open a formatted, printer-friendly summary page optimized for paper printing or saving as a PDF file.</p>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="scoring-section-title">Restore / Import Backup</div>
+                <div class="card glass-card import-card">
+                    <p class="card-instruction">Upload a previously exported JSON backup file to restore evaluation records. Warning: This will overwrite any existing scores on this device.</p>
+                    
+                    <div class="import-file-area">
+                        <label for="import-json-file" class="file-upload-label">
+                            <i data-lucide="upload-cloud"></i>
+                            <span>Select JSON Backup File</span>
+                            <input type="file" id="import-json-file" accept=".json" style="display: none;">
+                        </label>
+                        <span class="selected-file-name" id="import-file-name">No file chosen</span>
+                    </div>
+
+                    <button class="btn btn-outline-primary btn-block" id="btn-import-confirm" disabled>
+                        <i data-lucide="check"></i> Restore Backup
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Global Toast Alert -->
+    <div class="toast-notification" id="app-toast">
+        <i data-lucide="info" id="toast-icon"></i>
+        <span id="toast-message">Notification message</span>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="app-modal" style="display: none;">
+        <div class="modal-card glass-card">
+            <h3 id="modal-title">Confirm Action</h3>
+            <p id="modal-body">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button class="btn btn-sm btn-outline" id="btn-modal-cancel">Cancel</button>
+                <button class="btn btn-sm btn-primary" id="btn-modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Template (Hidden from screen view, shown during printing) -->
+    <div class="print-only-container" id="print-mount">
+        <!-- Filled dynamically when print is triggered -->
+    </div>
+
+    <!-- Core App Script -->
+    <script src="app.js"></script>
+</body>
+</html>

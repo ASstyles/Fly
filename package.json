@@ -1,0 +1,11 @@
+{
+  "name": "fuel-to-fly-eval-app",
+  "version": "1.0.0",
+  "description": "Evaluation App for Fuel to Fly 4.0 Entrepreneurship Conclave",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y http-server . -p 8080 -o"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
