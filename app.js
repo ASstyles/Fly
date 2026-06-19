@@ -786,7 +786,7 @@ function startRecording(type) {
     
     const constraints = {
         audio: true,
-        video: isVideo ? { facingMode: 'user', width: 640, height: 480 } : false
+        video: isVideo ? { facingMode: { ideal: 'environment' }, width: 640, height: 480 } : false
     };
 
     navigator.mediaDevices.getUserMedia(constraints)
@@ -808,12 +808,23 @@ function startRecording(type) {
             };
 
             State.mediaRecorder.onstop = () => {
-                const mimeType = isVideo ? 'video/mp4' : 'audio/webm';
-                const blob = new Blob(State.recordedChunks, { type: mimeType });
+                const recordedMimeType = State.mediaRecorder.mimeType || (isVideo ? 'video/mp4' : 'audio/webm');
+                const blob = new Blob(State.recordedChunks, { type: recordedMimeType });
                 State.activeRecordingBlob = blob;
 
                 // Stop tracks to release camera/mic
                 stream.getTracks().forEach(track => track.stop());
+
+                // Save to IndexedDB immediately so it is not lost
+                saveRecordingBlob(State.activeRecordingKey, blob)
+                    .then(() => {
+                        console.log('Blob saved immediately to IndexedDB on stop.');
+                        updateRecordingMetadata(isVideo);
+                    })
+                    .catch(err => {
+                        console.error('Failed to autosave recording blob:', err);
+                        showToast('Failed to auto-save recording: ' + err.message, 'alert-triangle');
+                    });
 
                 // Mount UI Elements
                 mountRecordingPreview(blob);
@@ -841,6 +852,31 @@ function startRecording(type) {
             console.error('Permission denied or camera issues:', err);
             showToast('Unable to access media recording hardware permissions.', 'alert-triangle');
         });
+}
+
+// Helper to keep localStorage lists & drafts synchronized with new IndexedDB blobs immediately
+function updateRecordingMetadata(isVideo) {
+    const evalData = State.evaluations.find(ev => ev.teamId === State.selectedTeamId && ev.roundName === State.currentRound);
+    const suffix = isVideo ? 'mp4' : 'webm';
+    
+    if (evalData) {
+        evalData.recording.audioAvailable = !isVideo;
+        evalData.recording.videoAvailable = isVideo;
+        evalData.recording.fileName = `${State.currentRound}_${evalData.teamName.replace(/\s+/g, '_')}_pitch.${suffix}`;
+        evalData.recording.storageKey = State.activeRecordingKey;
+        saveEvaluationsToStorage();
+    }
+    
+    const draftKey = `${STORAGE_PREFIX}draft_${State.currentRound}_${State.selectedTeamId}`;
+    const draftData = localStorage.getItem(draftKey);
+    if (draftData) {
+        const draft = JSON.parse(draftData);
+        draft.recording.audioAvailable = !isVideo;
+        draft.recording.videoAvailable = isVideo;
+        draft.recording.fileName = `${State.currentRound}_${draft.teamName.replace(/\s+/g, '_')}_pitch.${suffix}`;
+        draft.recording.storageKey = State.activeRecordingKey;
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+    }
 }
 
 function stopRecordingAction(save = true) {
