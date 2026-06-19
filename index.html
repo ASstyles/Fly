@@ -400,6 +400,9 @@
                         </div>
                     </div>
 
+                    <!-- Live Camera Viewfinder -->
+                    <video id="live-viewfinder" autoplay playsinline muted style="display: none;"></video>
+
                     <div class="recording-controls">
                         <button class="btn btn-danger-dark" id="btn-rec-audio-start">
                             <i data-lucide="mic"></i> Record Audio
@@ -412,17 +415,29 @@
                         </button>
                     </div>
 
-                    <!-- Recording Preview & Actions -->
-                    <div id="recording-preview-box" style="display: none;" class="preview-media-container">
-                        <div class="preview-header">Recording Preview</div>
-                        <div id="preview-media-mount">
-                            <!-- audio/video tag will mount here -->
-                        </div>
+                    <!-- Audio Preview -->
+                    <div id="audio-preview-box" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Audio Pitch Preview</div>
+                        <div id="audio-media-mount"></div>
                         <div class="preview-actions">
-                            <button class="btn btn-sm btn-outline-success" id="btn-rec-download">
-                                <i data-lucide="download"></i> Download File
+                            <button class="btn btn-sm btn-outline-success" id="btn-audio-download">
+                                <i data-lucide="download"></i> Download Audio
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" id="btn-rec-delete">
+                            <button class="btn btn-sm btn-outline-danger" id="btn-audio-delete">
+                                <i data-lucide="trash-2"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Video Preview -->
+                    <div id="video-preview-box" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Video Pitch Preview</div>
+                        <div id="video-media-mount"></div>
+                        <div class="preview-actions">
+                            <button class="btn btn-sm btn-outline-success" id="btn-video-download">
+                                <i data-lucide="download"></i> Download Video
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" id="btn-video-delete">
                                 <i data-lucide="trash-2"></i> Delete
                             </button>
                         </div>
@@ -694,14 +709,24 @@
                         <span>No media recording attached to this evaluation.</span>
                     </div>
 
-                    <div id="detail-recording-available" style="display: none;" class="preview-media-container">
-                        <div class="preview-header">Media Player</div>
-                        <div id="detail-media-mount">
-                            <!-- audio/video tag will mount here -->
-                        </div>
+                    <!-- Audio Player in Details -->
+                    <div id="detail-audio-available" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Audio Pitch Recording</div>
+                        <div id="detail-audio-mount"></div>
                         <div class="preview-actions">
-                            <button class="btn btn-sm btn-outline-success" id="btn-detail-media-download">
-                                <i data-lucide="download"></i> Download Recording
+                            <button class="btn btn-sm btn-outline-success" id="btn-detail-audio-download">
+                                <i data-lucide="download"></i> Download Audio
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Video Player in Details -->
+                    <div id="detail-video-available" style="display: none;" class="preview-media-container">
+                        <div class="preview-header">Video Pitch Recording</div>
+                        <div id="detail-video-mount"></div>
+                        <div class="preview-actions">
+                            <button class="btn btn-sm btn-outline-success" id="btn-detail-video-download">
+                                <i data-lucide="download"></i> Download Video
                             </button>
                         </div>
                     </div>

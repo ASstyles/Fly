@@ -206,31 +206,51 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- State Persistency ---
 function loadLocalData() {
     // Load Judge Name
-    State.judgeName = localStorage.getItem(STORAGE_PREFIX + 'judgeName') || '';
-    if (State.judgeName) {
-        document.getElementById('judge-name-input').value = State.judgeName;
-        updateHeaderInfo();
+    try {
+        State.judgeName = localStorage.getItem(STORAGE_PREFIX + 'judgeName') || '';
+        if (State.judgeName) {
+            const el = document.getElementById('judge-name-input');
+            if (el) el.value = State.judgeName;
+            updateHeaderInfo();
+        }
+    } catch (e) {
+        console.error('Failed to load judgeName from localStorage:', e);
     }
 
     // Load Teams
-    const storedTeams = localStorage.getItem(STORAGE_PREFIX + 'teams');
-    if (storedTeams) {
-        State.teams = JSON.parse(storedTeams);
-    } else {
+    try {
+        const storedTeams = localStorage.getItem(STORAGE_PREFIX + 'teams');
+        if (storedTeams) {
+            State.teams = JSON.parse(storedTeams);
+        } else {
+            State.teams = [...PRELOADED_TEAMS];
+            localStorage.setItem(STORAGE_PREFIX + 'teams', JSON.stringify(State.teams));
+        }
+    } catch (e) {
+        console.error('Failed to load teams from localStorage, resetting to defaults:', e);
         State.teams = [...PRELOADED_TEAMS];
-        localStorage.setItem(STORAGE_PREFIX + 'teams', JSON.stringify(State.teams));
     }
 
     // Load Evaluations
-    const storedEvaluations = localStorage.getItem(STORAGE_PREFIX + 'evaluations');
-    if (storedEvaluations) {
-        State.evaluations = JSON.parse(storedEvaluations);
+    try {
+        const storedEvaluations = localStorage.getItem(STORAGE_PREFIX + 'evaluations');
+        if (storedEvaluations) {
+            State.evaluations = JSON.parse(storedEvaluations);
+        }
+    } catch (e) {
+        console.error('Failed to load evaluations from localStorage:', e);
+        State.evaluations = [];
     }
 
     // Load Award Overrides
-    const storedAwards = localStorage.getItem(STORAGE_PREFIX + 'awardOverrides');
-    if (storedAwards) {
-        State.awardManualOverrides = JSON.parse(storedAwards);
+    try {
+        const storedAwards = localStorage.getItem(STORAGE_PREFIX + 'awardOverrides');
+        if (storedAwards) {
+            State.awardManualOverrides = JSON.parse(storedAwards);
+        }
+    } catch (e) {
+        console.error('Failed to load awardOverrides from localStorage:', e);
+        State.awardManualOverrides = {};
     }
 }
 
@@ -506,7 +526,7 @@ function setupScoringScreen() {
     }
 
     // Set Draft ID for recording attachment
-    State.activeRecordingKey = `rec_${State.currentRound}_${team.id}`;
+    State.activeRecordingKey = `rec_${State.currentRound}_${team.id}_audio`; // default placeholder
 
     // Load Existing Evaluation OR Draft OR defaults
     const evalData = State.evaluations.find(ev => ev.teamId === team.id && ev.roundName === State.currentRound);
@@ -514,14 +534,15 @@ function setupScoringScreen() {
 
     if (evalData) {
         populateScoringInputs(evalData);
-        checkSavedRecordingAvailable(State.activeRecordingKey);
+        checkSavedRecordings(team.id);
     } else if (draftData) {
         populateScoringInputs(JSON.parse(draftData));
-        checkSavedRecordingAvailable(State.activeRecordingKey);
+        checkSavedRecordings(team.id);
         showToast('Restored draft scores.', 'info');
     } else {
         // Defaults: 0s, trigger live total update
         updateScoringTotal();
+        checkSavedRecordings(team.id);
     }
 }
 
@@ -545,8 +566,19 @@ function resetScoringInputs() {
     // Recording State
     State.activeRecordingBlob = null;
     State.activeRecordingType = null;
-    document.getElementById('recording-preview-box').style.display = 'none';
-    document.getElementById('preview-media-mount').innerHTML = '';
+    
+    // Reset Viewfinder
+    const viewfinder = document.getElementById('live-viewfinder');
+    if (viewfinder) {
+        viewfinder.srcObject = null;
+        viewfinder.style.display = 'none';
+    }
+
+    // Reset previews
+    document.getElementById('audio-preview-box').style.display = 'none';
+    document.getElementById('video-preview-box').style.display = 'none';
+    document.getElementById('audio-media-mount').innerHTML = '';
+    document.getElementById('video-media-mount').innerHTML = '';
     updateRecordingUI('No recording attached', '00:00', false);
 }
 
@@ -609,6 +641,9 @@ function getScoringData(team) {
 
     const total = orig + feas + markt + impct + pres;
 
+    const hasAudio = document.getElementById('btn-rec-audio-start').dataset.available === 'true';
+    const hasVideo = document.getElementById('btn-rec-video-start').dataset.available === 'true';
+
     return {
         evaluationId: `${State.currentRound}_${team.id}`,
         eventName: 'Fuel to Fly 4.0',
@@ -637,10 +672,12 @@ function getScoringData(team) {
             overallComment: document.getElementById('notes-overall').value.trim()
         },
         recording: {
-            audioAvailable: State.activeRecordingType === 'audio',
-            videoAvailable: State.activeRecordingType === 'video',
-            fileName: State.activeRecordingType ? `${State.currentRound}_${team.name.replace(/\s+/g, '_')}.${State.activeRecordingType === 'audio' ? 'webm' : 'mp4'}` : '',
-            storageKey: State.activeRecordingType ? State.activeRecordingKey : '',
+            audioAvailable: hasAudio,
+            videoAvailable: hasVideo,
+            audioFileName: hasAudio ? `${State.currentRound}_${team.name.replace(/\s+/g, '_')}_pitch_audio.webm` : '',
+            videoFileName: hasVideo ? `${State.currentRound}_${team.name.replace(/\s+/g, '_')}_pitch_video.mp4` : '',
+            audioStorageKey: hasAudio ? `rec_${State.currentRound}_${team.id}_audio` : '',
+            videoStorageKey: hasVideo ? `rec_${State.currentRound}_${team.id}_video` : '',
             downloadStatus: 'Pending'
         },
         createdAt: new Date().toISOString(),
@@ -727,13 +764,6 @@ function performSaveStep(finalData, teamId, callback) {
     // Clear Draft
     localStorage.removeItem(`${STORAGE_PREFIX}draft_${State.currentRound}_${teamId}`);
 
-    // If media blob is loaded, confirm saving status
-    if (State.activeRecordingBlob) {
-        saveRecordingBlob(State.activeRecordingKey, State.activeRecordingBlob)
-            .then(() => console.log('Blob saved to IndexedDB successfully.'))
-            .catch(err => showToast('Failed to save pitch recording inside IndexedDB: ' + err.message, 'alert-triangle'));
-    }
-
     showToast(`Evaluation for ${finalData.teamName} saved.`, 'check-circle');
 
     if (callback) {
@@ -763,33 +793,144 @@ function getNextUnscoredTeamId() {
 
 
 // --- MEDIA RECORDER IMPLEMENTATION ---
-function checkSavedRecordingAvailable(key) {
-    getRecordingBlob(key).then(blob => {
+function checkSavedRecordings(teamId) {
+    const audioKey = `rec_${State.currentRound}_${teamId}_audio`;
+    const videoKey = `rec_${State.currentRound}_${teamId}_video`;
+
+    document.getElementById('audio-preview-box').style.display = 'none';
+    document.getElementById('video-preview-box').style.display = 'none';
+    document.getElementById('audio-media-mount').innerHTML = '';
+    document.getElementById('video-media-mount').innerHTML = '';
+
+    document.getElementById('btn-rec-audio-start').dataset.available = 'false';
+    document.getElementById('btn-rec-video-start').dataset.available = 'false';
+
+    let audioBlobLoaded = null;
+    let videoBlobLoaded = null;
+
+    const p1 = getRecordingBlob(audioKey).then(blob => {
         if (blob) {
-            State.activeRecordingBlob = blob;
-            State.activeRecordingType = blob.type.includes('video') ? 'video' : 'audio';
-            
-            updateRecordingUI(
-                `${State.activeRecordingType === 'video' ? 'Video' : 'Audio'} recording loaded`, 
-                'Available', 
-                false
-            );
-            mountRecordingPreview(blob);
+            audioBlobLoaded = blob;
+            document.getElementById('btn-rec-audio-start').dataset.available = 'true';
+            mountMediaToElement('audio-preview-box', 'audio-media-mount', blob, 'audio');
         }
+    });
+
+    const p2 = getRecordingBlob(videoKey).then(blob => {
+        if (blob) {
+            videoBlobLoaded = blob;
+            document.getElementById('btn-rec-video-start').dataset.available = 'true';
+            mountMediaToElement('video-preview-box', 'video-media-mount', blob, 'video');
+        }
+    });
+
+    Promise.all([p1, p2]).then(() => {
+        const hasAudio = !!audioBlobLoaded;
+        const hasVideo = !!videoBlobLoaded;
+        let statusText = 'No recordings attached';
+        if (hasAudio && hasVideo) {
+            statusText = 'Audio + Video attached';
+        } else if (hasAudio) {
+            statusText = 'Audio recording attached';
+        } else if (hasVideo) {
+            statusText = 'Video recording attached';
+        }
+        updateRecordingUI(statusText, (hasAudio || hasVideo) ? 'Available' : '00:00', false);
     });
 }
 
+function mountMediaToElement(boxId, mountId, blob, type) {
+    const box = document.getElementById(boxId);
+    const mount = document.getElementById(mountId);
+    if (!box || !mount) return;
+    box.style.display = 'block';
+    mount.innerHTML = '';
+
+    const url = URL.createObjectURL(blob);
+    if (type === 'video') {
+        const el = document.createElement('video');
+        el.src = url;
+        el.controls = true;
+        el.playsInline = true;
+        mount.appendChild(el);
+    } else {
+        const el = document.createElement('audio');
+        el.src = url;
+        el.controls = true;
+        mount.appendChild(el);
+    }
+}
+
 function startRecording(type) {
+    const team = State.teams.find(t => t.id === State.selectedTeamId);
+    if (!team) return;
+
+    const otherType = (type === 'video') ? 'audio' : 'video';
+    const otherKey = `rec_${State.currentRound}_${team.id}_${otherType}`;
+
+    // Check if the other recording type exists to warn the judge
+    getRecordingBlob(otherKey).then(blob => {
+        if (blob) {
+            showConfirmationModal(
+                'Overwrite Existing Recording?',
+                `You already have an ${otherType} recording saved for this team. Starting a new ${type} recording will delete it. Proceed?`,
+                () => {
+                    executeStartRecording(type);
+                }
+            );
+        } else {
+            executeStartRecording(type);
+        }
+    }).catch(err => {
+        executeStartRecording(type);
+    });
+}
+
+function executeStartRecording(type) {
     const isVideo = (type === 'video');
+    
+    // Guard clause for Secure Context (HTTPS / Localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const msg = 'Camera/Microphone access is blocked. Mobile browsers require a secure connection (HTTPS or localhost) to access media recording hardware.';
+        showToast(msg, 'alert-triangle');
+        console.error('navigator.mediaDevices is undefined. Secure context (HTTPS/localhost) is required.');
+        
+        // Show guidance modal to event judge
+        showConfirmationModal(
+            'Secure Connection Required',
+            'Modern mobile devices require an HTTPS connection to access the camera and microphone. If you are serving the app locally from a computer to a phone, please use an HTTPS tunnel like ngrok (e.g. run "ngrok http 8080" and open the https URL on your phone).',
+            null
+        );
+        return;
+    }
+
+    const teamId = State.selectedTeamId;
+    const roundName = State.currentRound;
+    const recordingKey = `rec_${roundName}_${teamId}_${type}`;
+
     State.recordedChunks = [];
     State.activeRecordingType = type;
+    State.activeRecordingKey = recordingKey;
     
+    // Reset previews
+    document.getElementById('audio-preview-box').style.display = 'none';
+    document.getElementById('video-preview-box').style.display = 'none';
+    document.getElementById('audio-media-mount').innerHTML = '';
+    document.getElementById('video-media-mount').innerHTML = '';
+
     const constraints = {
         audio: true,
-        video: isVideo ? { facingMode: { ideal: 'environment' }, width: 640, height: 480 } : false
+        video: isVideo ? { facingMode: { ideal: 'environment' } } : false
     };
 
     navigator.mediaDevices.getUserMedia(constraints)
+        .catch(err => {
+            console.warn('Failed environment camera constraints, retrying with default video constraints:', err);
+            return navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: isVideo
+            });
+        })
         .then(stream => {
             document.querySelector('.recording-card').classList.add('recording-active');
             
@@ -797,7 +938,20 @@ function startRecording(type) {
             document.getElementById('btn-rec-audio-start').style.display = 'none';
             document.getElementById('btn-rec-video-start').style.display = 'none';
             document.getElementById('btn-rec-stop').style.display = 'inline-flex';
-            document.getElementById('recording-preview-box').style.display = 'none';
+
+            // Viewfinder logic
+            const viewfinder = document.getElementById('live-viewfinder');
+            if (isVideo && viewfinder) {
+                viewfinder.style.display = 'block';
+                viewfinder.srcObject = stream;
+                viewfinder.muted = true;
+                viewfinder.playsInline = true;
+                viewfinder.play()
+                    .then(() => console.log('Viewfinder play started'))
+                    .catch(err => console.error('Viewfinder play failed:', err));
+            } else if (viewfinder) {
+                viewfinder.style.display = 'none';
+            }
 
             State.mediaRecorder = new MediaRecorder(stream);
             
@@ -815,20 +969,30 @@ function startRecording(type) {
                 // Stop tracks to release camera/mic
                 stream.getTracks().forEach(track => track.stop());
 
-                // Save to IndexedDB immediately so it is not lost
-                saveRecordingBlob(State.activeRecordingKey, blob)
+                // Release viewfinder
+                const viewfinder = document.getElementById('live-viewfinder');
+                if (viewfinder) {
+                    viewfinder.srcObject = null;
+                    viewfinder.style.display = 'none';
+                }
+
+                // Delete the alternative recording type to keep them mutually exclusive
+                const otherType = isVideo ? 'audio' : 'video';
+                const otherKey = `rec_${roundName}_${teamId}_${otherType}`;
+                
+                deleteRecordingBlob(otherKey)
+                    .catch(err => console.warn('Failed to delete other media type:', err))
+                    .then(() => saveRecordingBlob(recordingKey, blob))
                     .then(() => {
                         console.log('Blob saved immediately to IndexedDB on stop.');
-                        updateRecordingMetadata(isVideo);
+                        updateRecordingMetadata(isVideo, teamId, roundName);
+                        checkSavedRecordings(teamId);
                     })
                     .catch(err => {
                         console.error('Failed to autosave recording blob:', err);
                         showToast('Failed to auto-save recording: ' + err.message, 'alert-triangle');
                     });
 
-                // Mount UI Elements
-                mountRecordingPreview(blob);
-                
                 document.querySelector('.recording-card').classList.remove('recording-active');
                 document.getElementById('btn-rec-audio-start').style.display = 'inline-flex';
                 document.getElementById('btn-rec-video-start').style.display = 'inline-flex';
@@ -855,26 +1019,52 @@ function startRecording(type) {
 }
 
 // Helper to keep localStorage lists & drafts synchronized with new IndexedDB blobs immediately
-function updateRecordingMetadata(isVideo) {
-    const evalData = State.evaluations.find(ev => ev.teamId === State.selectedTeamId && ev.roundName === State.currentRound);
+function updateRecordingMetadata(isVideo, teamId, roundName) {
+    const evalData = State.evaluations.find(ev => ev.teamId === teamId && ev.roundName === roundName);
     const suffix = isVideo ? 'mp4' : 'webm';
     
     if (evalData) {
-        evalData.recording.audioAvailable = !isVideo;
-        evalData.recording.videoAvailable = isVideo;
-        evalData.recording.fileName = `${State.currentRound}_${evalData.teamName.replace(/\s+/g, '_')}_pitch.${suffix}`;
-        evalData.recording.storageKey = State.activeRecordingKey;
+        if (isVideo) {
+            evalData.recording.videoAvailable = true;
+            evalData.recording.videoFileName = `${roundName}_${evalData.teamName.replace(/\s+/g, '_')}_pitch_video.${suffix}`;
+            evalData.recording.videoStorageKey = `rec_${roundName}_${teamId}_video`;
+            
+            evalData.recording.audioAvailable = false;
+            evalData.recording.audioFileName = '';
+            evalData.recording.audioStorageKey = '';
+        } else {
+            evalData.recording.audioAvailable = true;
+            evalData.recording.audioFileName = `${roundName}_${evalData.teamName.replace(/\s+/g, '_')}_pitch_audio.${suffix}`;
+            evalData.recording.audioStorageKey = `rec_${roundName}_${teamId}_audio`;
+            
+            evalData.recording.videoAvailable = false;
+            evalData.recording.videoFileName = '';
+            evalData.recording.videoStorageKey = '';
+        }
         saveEvaluationsToStorage();
     }
     
-    const draftKey = `${STORAGE_PREFIX}draft_${State.currentRound}_${State.selectedTeamId}`;
+    const draftKey = `${STORAGE_PREFIX}draft_${roundName}_${teamId}`;
     const draftData = localStorage.getItem(draftKey);
     if (draftData) {
         const draft = JSON.parse(draftData);
-        draft.recording.audioAvailable = !isVideo;
-        draft.recording.videoAvailable = isVideo;
-        draft.recording.fileName = `${State.currentRound}_${draft.teamName.replace(/\s+/g, '_')}_pitch.${suffix}`;
-        draft.recording.storageKey = State.activeRecordingKey;
+        if (isVideo) {
+            draft.recording.videoAvailable = true;
+            draft.recording.videoFileName = `${roundName}_${draft.teamName.replace(/\s+/g, '_')}_pitch_video.${suffix}`;
+            draft.recording.videoStorageKey = `rec_${roundName}_${teamId}_video`;
+            
+            draft.recording.audioAvailable = false;
+            draft.recording.audioFileName = '';
+            draft.recording.audioStorageKey = '';
+        } else {
+            draft.recording.audioAvailable = true;
+            draft.recording.audioFileName = `${roundName}_${draft.teamName.replace(/\s+/g, '_')}_pitch_audio.${suffix}`;
+            draft.recording.audioStorageKey = `rec_${roundName}_${teamId}_audio`;
+            
+            draft.recording.videoAvailable = false;
+            draft.recording.videoFileName = '';
+            draft.recording.videoStorageKey = '';
+        }
         localStorage.setItem(draftKey, JSON.stringify(draft));
     }
 }
@@ -1279,50 +1469,61 @@ function renderDetailScreen() {
     document.getElementById('detail-notes-overall').textContent = ev.notes.overallComment || 'No comments.';
 
     // Media Details
-    const recordMount = document.getElementById('detail-media-mount');
-    recordMount.innerHTML = '';
+    const audioMount = document.getElementById('detail-audio-mount');
+    const videoMount = document.getElementById('detail-video-mount');
+    audioMount.innerHTML = '';
+    videoMount.innerHTML = '';
 
-    const availBox = document.getElementById('detail-recording-available');
-    const unavailBox = document.getElementById('detail-recording-unavailable');
+    const audioAvail = document.getElementById('detail-audio-available');
+    const videoAvail = document.getElementById('detail-video-available');
+    const unavailableBlock = document.getElementById('detail-recording-unavailable');
 
-    const key = `rec_${State.currentRound}_${team.id}`;
-    
-    getRecordingBlob(key).then(blob => {
+    audioAvail.style.display = 'none';
+    videoAvail.style.display = 'none';
+    unavailableBlock.style.display = 'block';
+
+    const audioKey = `rec_${State.currentRound}_${team.id}_audio`;
+    const videoKey = `rec_${State.currentRound}_${team.id}_video`;
+
+    const p1 = getRecordingBlob(audioKey).then(blob => {
         if (blob) {
-            availBox.style.display = 'block';
-            unavailBox.style.display = 'none';
+            audioAvail.style.display = 'block';
+            unavailableBlock.style.display = 'none';
 
             const url = URL.createObjectURL(blob);
-            if (blob.type.includes('video')) {
-                const video = document.createElement('video');
-                video.src = url;
-                video.controls = true;
-                video.playsInline = true;
-                recordMount.appendChild(video);
-            } else {
-                const audio = document.createElement('audio');
-                audio.src = url;
-                audio.controls = true;
-                recordMount.appendChild(audio);
-            }
+            const el = document.createElement('audio');
+            el.src = url;
+            el.controls = true;
+            audioMount.appendChild(el);
 
-            // Setup download button
-            const dlBtn = document.getElementById('btn-detail-media-download');
-            dlBtn.onclick = () => {
-                const suffix = blob.type.includes('video') ? 'mp4' : 'webm';
-                const filename = `${ev.roundName}_${ev.teamName.replace(/\s+/g, '_')}_pitch.${suffix}`;
+            document.getElementById('btn-detail-audio-download').onclick = () => {
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = filename;
+                a.download = `${ev.roundName}_${ev.teamName.replace(/\s+/g, '_')}_pitch_audio.webm`;
                 a.click();
             };
-        } else {
-            availBox.style.display = 'none';
-            unavailBox.style.display = 'block';
         }
-    }).catch(err => {
-        availBox.style.display = 'none';
-        unavailBox.style.display = 'block';
+    });
+
+    const p2 = getRecordingBlob(videoKey).then(blob => {
+        if (blob) {
+            videoAvail.style.display = 'block';
+            unavailableBlock.style.display = 'none';
+
+            const url = URL.createObjectURL(blob);
+            const el = document.createElement('video');
+            el.src = url;
+            el.controls = true;
+            el.playsInline = true;
+            videoMount.appendChild(el);
+
+            document.getElementById('btn-detail-video-download').onclick = () => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${ev.roundName}_${ev.teamName.replace(/\s+/g, '_')}_pitch_video.mp4`;
+                a.click();
+            };
+        }
     });
 }
 
@@ -1804,8 +2005,13 @@ function setupEventListeners() {
     document.getElementById('btn-rec-audio-start').addEventListener('click', () => startRecording('audio'));
     document.getElementById('btn-rec-video-start').addEventListener('click', () => startRecording('video'));
     document.getElementById('btn-rec-stop').addEventListener('click', () => stopRecordingAction(true));
-    document.getElementById('btn-rec-delete').addEventListener('click', deleteRecordingAction);
-    document.getElementById('btn-rec-download').addEventListener('click', downloadActiveRecording);
+    // Audio preview actions
+    document.getElementById('btn-audio-download').addEventListener('click', () => downloadMediaAction('audio'));
+    document.getElementById('btn-audio-delete').addEventListener('click', () => deleteMediaAction('audio'));
+
+    // Video preview actions
+    document.getElementById('btn-video-download').addEventListener('click', () => downloadMediaAction('video'));
+    document.getElementById('btn-video-delete').addEventListener('click', () => deleteMediaAction('video'));
 
     // Confirmation Screen
     document.getElementById('btn-conf-next').addEventListener('click', () => {
@@ -1865,4 +2071,71 @@ function setupEventListeners() {
     document.getElementById('btn-export-print').addEventListener('click', triggerPrintSummary);
 
     setupJsonRestore();
+}
+
+function downloadMediaAction(type) {
+    const key = `rec_${State.currentRound}_${State.selectedTeamId}_${type}`;
+    getRecordingBlob(key).then(blob => {
+        if (!blob) return;
+        const team = State.teams.find(t => t.id === State.selectedTeamId);
+        const suffix = type === 'video' ? 'mp4' : 'webm';
+        const filename = `${State.currentRound}_${team.name.replace(/\s+/g, '_')}_pitch_${type}.${suffix}`;
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        const evalData = State.evaluations.find(ev => ev.teamId === State.selectedTeamId && ev.roundName === State.currentRound);
+        if (evalData) {
+            evalData.recording.downloadStatus = 'Downloaded';
+            saveEvaluationsToStorage();
+        }
+    });
+}
+
+function deleteMediaAction(type) {
+    showConfirmationModal(
+        `Delete ${type === 'video' ? 'Video' : 'Audio'}?`,
+        `This will permanently remove the ${type} recording. This action cannot be undone.`,
+        () => {
+            const key = `rec_${State.currentRound}_${State.selectedTeamId}_${type}`;
+            deleteRecordingBlob(key).then(() => {
+                showToast(`${type === 'video' ? 'Video' : 'Audio'} recording deleted.`, 'trash-2');
+                checkSavedRecordings(State.selectedTeamId);
+                
+                const evalData = State.evaluations.find(ev => ev.teamId === State.selectedTeamId && ev.roundName === State.currentRound);
+                if (evalData) {
+                    if (type === 'audio') {
+                        evalData.recording.audioAvailable = false;
+                        evalData.recording.audioStorageKey = '';
+                        evalData.recording.audioFileName = '';
+                    } else {
+                        evalData.recording.videoAvailable = false;
+                        evalData.recording.videoStorageKey = '';
+                        evalData.recording.videoFileName = '';
+                    }
+                    saveEvaluationsToStorage();
+                }
+
+                const draftKey = `${STORAGE_PREFIX}draft_${State.currentRound}_${State.selectedTeamId}`;
+                const draftData = localStorage.getItem(draftKey);
+                if (draftData) {
+                    const draft = JSON.parse(draftData);
+                    if (type === 'audio') {
+                        draft.recording.audioAvailable = false;
+                        draft.recording.audioStorageKey = '';
+                        draft.recording.audioFileName = '';
+                    } else {
+                        draft.recording.videoAvailable = false;
+                        draft.recording.videoStorageKey = '';
+                        draft.recording.videoFileName = '';
+                    }
+                    localStorage.setItem(draftKey, JSON.stringify(draft));
+                }
+            });
+        }
+    );
 }
