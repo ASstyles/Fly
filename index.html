@@ -13,6 +13,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Iframe Warning Banner -->
+    <div id="iframe-warning-banner" style="display: none; background: #7f1d1d; border-bottom: 1px solid #ef4444; color: white; padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 500; z-index: 1000; position: relative;">
+        <span style="display: inline-flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap;">
+            <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i>
+            Camera &amp; microphone access might be blocked inside this page framing.
+            <button id="btn-iframe-open-direct" style="background: #ef4444; border: none; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.75rem;">Open Direct App</button>
+        </span>
+    </div>
+
     <!-- App Header (Shows on all screens except Welcome) -->
     <header class="app-header" id="main-header" style="display: none;">
         <div class="header-container">

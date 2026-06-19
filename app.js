@@ -201,6 +201,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLocalData();
     setupEventListeners();
     navigateToScreen('screen-welcome', false);
+
+    // If running in an iframe (e.g. Swipe Pages), show direct redirection warning
+    const isInsideIframe = (window.self !== window.top);
+    if (isInsideIframe) {
+        const banner = document.getElementById('iframe-warning-banner');
+        const openBtn = document.getElementById('btn-iframe-open-direct');
+        if (banner) {
+            banner.style.display = 'block';
+        }
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                window.open(window.location.href, '_blank');
+            });
+        }
+    }
 });
 
 // --- State Persistency ---
@@ -861,6 +876,32 @@ function mountMediaToElement(boxId, mountId, blob, type) {
     }
 }
 
+function getSupportedMimeType(type) {
+    const isVideo = (type === 'video');
+    const candidates = isVideo ? [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/mp4',
+        'video/quicktime'
+    ] : [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/aac',
+        'audio/wav'
+    ];
+
+    for (const mime of candidates) {
+        if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(mime)) {
+            return mime;
+        }
+    }
+    return ''; // fallback to browser default
+}
+
 function startRecording(type) {
     const team = State.teams.find(t => t.id === State.selectedTeamId);
     if (!team) return;
@@ -953,7 +994,9 @@ function executeStartRecording(type) {
                 viewfinder.style.display = 'none';
             }
 
-            State.mediaRecorder = new MediaRecorder(stream);
+            const mimeType = getSupportedMimeType(type);
+            const recorderOptions = mimeType ? { mimeType } : {};
+            State.mediaRecorder = new MediaRecorder(stream, recorderOptions);
             
             State.mediaRecorder.ondataavailable = (e) => {
                 if (e.data && e.data.size > 0) {
@@ -1014,7 +1057,7 @@ function executeStartRecording(type) {
         })
         .catch(err => {
             console.error('Permission denied or camera issues:', err);
-            showToast('Unable to access media recording hardware permissions.', 'alert-triangle');
+            showToast(`Camera/Mic Access Failed: ${err.name} - ${err.message}`, 'alert-triangle');
         });
 }
 
